@@ -1,0 +1,6 @@
+flask
+gunicorn
+flask-sqlalchemy
+flask-admin
+requests
+openai
