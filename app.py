@@ -384,7 +384,7 @@ def update_index():
 # --------------------------
 # Chatbot-Endpoint mit Retrieval-Augmented Generation (FAISS)
 # --------------------------
-@app.route("/chat", methods=["POST"])
+@app.route("/chat", methods=["GET", "POST"])
 def chatbot():
     user_input = request.json.get("message")
     if not user_input:
