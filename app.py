@@ -394,13 +394,13 @@ def chatbot():
     def get_openai_api_key():
         env_key = os.getenv("OPENAI_API_KEY")
         if env_key:
-            return env_key  # Falls in den Umgebungsvariablen vorhanden
+            return env_key
 
         stored_key = APIKey.query.first()
         if stored_key:
-            return stored_key.key  # Falls in der Datenbank gespeichert
+            return stored_key.key
 
-        return None  # Kein API-Key gefunden
+        return None
 
     openai.api_key = get_openai_api_key()
     if not openai.api_key:
@@ -421,7 +421,7 @@ def chatbot():
         if knowledge_text.strip():
             build_faiss_index_from_knowledge(knowledge_text)
 
-    # FAISS-Retrieval
+    # Falls kein FAISS-Index vorhanden ist
     relevant_context = ""
     if faiss_index is not None:
         query_embedding = get_embedding(user_input)
@@ -434,7 +434,7 @@ def chatbot():
         relevant_chunks = [faiss_chunk_list[idx] for idx in indices[0] if idx < len(faiss_chunk_list)]
         relevant_context = "\n\n".join(relevant_chunks)
 
-    # OpenAI API-Aufruf mit RAG (Retrieval-Augmented Generation)
+    # OpenAI API aufrufen
     messages = [
         {"role": "system", "content": base_prompt},
         {"role": "system", "content": f"Relevante Informationen:\n{relevant_context}"},
@@ -447,7 +447,6 @@ def chatbot():
             model="gpt-4",
             messages=messages
         )
-        return jsonify({"response": response.choices[0].message.content})  # ✅ WICHTIG: Antwort zurückgeben!
-    
+        return jsonify({"response": response.choices[0].message.content})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500  # ✅ Fehlerbehandlung mit Rückgabe!
+        return jsonify({"error": str(e)}), 500
