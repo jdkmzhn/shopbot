@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ filename }} – Dateiinhalt</title>
+</head>
+<body>
+    <h1>📄 Inhalt von {{ filename }}</h1>
+    <pre>{{ content }}</pre>
+    <a href="{{ url_for('upload_file') }}">🔙 Zurück</a>
+</body>
+</html>

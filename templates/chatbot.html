@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chatbot</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f7f7f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .chat-container {
+      width: 100%;
+      max-width: 400px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .chat-box {
+      flex: 1;
+      padding: 1rem;
+      height: 400px;
+      overflow-y: auto;
+      background: #fafafa;
+    }
+    .message {
+      margin-bottom: 0.8rem;
+      max-width: 75%;
+      clear: both;
+      position: relative;
+      padding: 10px 15px;
+      border-radius: 8px;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+    .bot {
+      background: #e2e2e2;
+      float: left;
+      text-align: left;
+      border-top-left-radius: 0;
+    }
+    .user {
+      background: #007BFF;
+      color: #fff;
+      float: right;
+      text-align: right;
+      border-top-right-radius: 0;
+    }
+    .input-container {
+      display: flex;
+      border-top: 1px solid #ccc;
+      padding: 0.5rem;
+      background: #fff;
+    }
+    .input-container input {
+      flex: 1;
+      padding: 0.5rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-right: 0.5rem;
+    }
+    .input-container button {
+      background: #007BFF;
+      color: #fff;
+      border: none;
+      font-size: 1rem;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .input-container button:hover {
+      background: #0056b3;
+    }
+  </style>
+
+  <script>
+    function linkify(text) {
+      const urlRegex = /((https?:\/\/[^\s]+)|(www\.[^\s]+))/g;
+      return text.replace(urlRegex, function(url) {
+        let href = url;
+        if (!/^https?:\/\//i.test(href)) {
+          href = "http://" + href;
+        }
+        return `<a href="${href}" target="_blank">${url}</a>`;
+      });
+    }
+
+    function addMessageToChat(text, sender) {
+      const chatBox = document.getElementById("chatBox");
+      if (sender === "bot") {
+        text = linkify(text);
+      }
+      const messageDiv = document.createElement("div");
+      messageDiv.classList.add("message", sender);
+      messageDiv.innerHTML = text;
+      chatBox.appendChild(messageDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const userMessageInput = document.getElementById("userMessage");
+      const userMessage = userMessageInput.value.trim();
+      if (!userMessage) return;
+
+      addMessageToChat(userMessage, "user");
+      userMessageInput.value = "";
+
+      try {
+        const response = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userMessage })
+        });
+        const data = await response.json();
+        if (data.response) {
+          addMessageToChat(data.response, "bot");
+        } else if (data.error) {
+          addMessageToChat("Fehler: " + data.error, "bot");
+        }
+      } catch (error) {
+        addMessageToChat("Netzwerkfehler: " + error.message, "bot");
+      }
+    }
+
+    async function loadGreeting() {
+      try {
+        const response = await fetch("/api/greeting");
+        const data = await response.json();
+        const chatBox = document.getElementById("chatBox");
+        if (!chatBox.hasChildNodes()) {
+          addMessageToChat(data.greeting_text || "Hallo! Wie kann ich helfen?", "bot");
+        }
+      } catch (error) {
+        console.error("Fehler beim Laden des Begrüßungstexts:", error);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadGreeting);
+    document.addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        const userMessageInput = document.getElementById("userMessage");
+        if (document.activeElement === userMessageInput) {
+          sendMessage();
+        }
+      }
+    });
+  </script>
+</head>
+<body>
+
+<div class="chat-container">
+  <div id="chatBox" class="chat-box"></div>
+  <div class="input-container">
+    <input type="text" id="userMessage" placeholder="Frage den Chatbot...">
+    <button onclick="sendMessage()">Senden</button>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Bereich</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+    h1 {
+      color: #333;
+    }
+    .admin-container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      margin: auto;
+    }
+    nav ul {
+      list-style: none;
+      padding: 0;
+    }
+    nav ul li {
+      margin: 10px 0;
+    }
+    nav ul li a, nav ul li button {
+      text-decoration: none;
+      color: #007BFF;
+      font-size: 16px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      font-family: inherit;
+    }
+    nav ul li a:hover, nav ul li button:hover {
+      text-decoration: underline;
+    }
+    form {
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <h1>📌 Willkommen im Admin-Bereich</h1>
+    <nav>
+      <ul>
+        <li><a href="{{ url_for('manage_websites') }}">🌍 Webseiten verwalten</a></li>
+        <li><a href="{{ url_for('upload_file') }}">📂 Textdateien verwalten</a></li>
+        <li><a href="{{ url_for('crawled_data') }}">📡 Crawl-Ergebnisse anzeigen</a></li>
+        <li><a href="{{ url_for('manage_settings') }}">⚙️ API-Schlüssel & Begrüßung verwalten</a></li>
+        <li>
+          <form action="{{ url_for('update_index') }}" method="post">
+            <button type="submit">🔄 Wissensindex aktualisieren</button>
+          </form>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</body>
+</html>

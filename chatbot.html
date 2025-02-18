@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Chatbot</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    #chatBox {
+      border: 1px solid #ccc;
+      padding: 10px;
+      width: 400px;
+      height: 300px;
+      overflow-y: auto;
+      background: #f9f9f9;
+    }
+    .message {
+      margin: 10px 0;
+      padding: 5px 10px;
+      border-radius: 8px;
+      max-width: 90%;
+    }
+    .user-message {
+      background-color: #d1e7dd;
+      text-align: right;
+      margin-left: auto;
+    }
+    .bot-message {
+      background-color: #e2e3e5;
+      text-align: left;
+      margin-right: auto;
+    }
+    a {
+      color: #007BFF;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+  <script>
+    // Hilfsfunktion, um URLs in einem Text in anklickbare Links umzuwandeln
+    function linkify(text) {
+      const urlPattern = /(https?:\/\/[^\s]+)/g;
+      return text.replace(urlPattern, function(url) {
+        return '<a href="' + url + '" target="_blank">' + url + '</a>';
+      });
+    }
+    
+    async function sendMessage() {
+      const inputField = document.getElementById("userMessage");
+      const userMessage = inputField.value.trim();
+      if (!userMessage) return;
+
+      const chatBox = document.getElementById("chatBox");
+      // Zeige die Benutzernachricht an
+      const userMsgElem = document.createElement("p");
+      userMsgElem.className = "message user-message";
+      userMsgElem.innerText = userMessage;
+      chatBox.appendChild(userMsgElem);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      // Sende Nachricht an den Server
+      try {
+        const response = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userMessage })
+        });
+        const data = await response.json();
+        const botText = data.response || data.error || "Es ist ein Fehler aufgetreten.";
+
+        // Verarbeite Bot-Text: Linkify (URLs umwandeln)
+        const botMsgElem = document.createElement("p");
+        botMsgElem.className = "message bot-message";
+        botMsgElem.innerHTML = linkify(botText);
+        chatBox.appendChild(botMsgElem);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      } catch (err) {
+        console.error("Fehler beim Senden der Nachricht:", err);
+        const errorElem = document.createElement("p");
+        errorElem.className = "message bot-message";
+        errorElem.innerText = "Netzwerkfehler: Nachricht konnte nicht gesendet werden.";
+        chatBox.appendChild(errorElem);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+      // Eingabefeld leeren
+      inputField.value = "";
+    }
+    
+    async function loadGreeting() {
+      try {
+        const response = await fetch("/api/greeting");
+        const data = await response.json();
+        const chatBox = document.getElementById("chatBox");
+        if (!chatBox.innerHTML.trim()) {
+          const greetingElem = document.createElement("p");
+          greetingElem.className = "message bot-message";
+          greetingElem.innerHTML = linkify(data.greeting_text || "Hallo! Wie kann ich helfen?");
+          chatBox.appendChild(greetingElem);
+          chatBox.scrollTop = chatBox.scrollHeight;
+        }
+      } catch (error) {
+        console.error("Fehler beim Laden des Begrüßungstexts:", error);
+      }
+    }
+    
+    document.addEventListener("DOMContentLoaded", loadGreeting);
+    
+    // Optional: Sende Nachricht per Enter-Taste
+    document.addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+  </script>
+</head>
+<body>
+  <h1>Chatbot</h1>
+  <div id="chatBox"></div>
+  <br>
+  <input type="text" id="userMessage" placeholder="Frage den Chatbot..." style="width: 300px;">
+  <button onclick="sendMessage()">Senden</button>
+</body>
+</html>
+    

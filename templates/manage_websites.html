@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Verwaltung der Webseiten</title>
+</head>
+<body>
+    {% include 'navbar.html' %}
+
+    <h1>Verwaltung der Webseiten</h1>
+
+    <!-- Formular zum Hinzufügen einer neuen Website -->
+    <h2>Neue Webseite hinzufügen</h2>
+    <form method="POST" action="{{ url_for('manage_websites') }}">
+        <label for="url">URL (mit http:// oder https://):</label>
+        <input type="text" id="url" name="url" placeholder="https://beispiel.de" required>
+        <button type="submit">Hinzufügen</button>
+    </form>
+
+    <!-- Liste der bereits eingetragenen Webseiten -->
+    <h2>Bereits eingetragene Webseiten</h2>
+    {% if websites %}
+        <ul>
+        {% for site in websites %}
+            <li>
+                {{ site.url }}
+                <!-- Button zum Löschen dieser Webseite -->
+                <form method="POST" action="{{ url_for('delete_website', website_id=site.id) }}" style="display:inline;">
+                    <button type="submit">Löschen</button>
+                </form>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>Keine Webseiten eingetragen.</p>
+    {% endif %}
+
+    <!-- Button zum Starten des Crawlings -->
+    <h2>Crawling starten</h2>
+    <p>Hiermit werden alle eingetragenen Webseiten gecrawlt und in <em>knowledge.txt</em> geschrieben.</p>
+    <form method="POST" action="{{ url_for('start_crawling') }}">
+        <button type="submit">Crawling starten</button>
+    </form>
+
+    <p>
+        <a href="{{ url_for('admin.index') }}">Zurück zum Admin-Bereich</a>
+    </p>
+</body>
+</html>
