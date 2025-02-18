@@ -384,57 +384,57 @@ def update_index():
 # --------------------------
 # Chatbot-Endpoint mit Retrieval-Augmented Generation (FAISS)
 # --------------------------
-@app.route("/chat", methods=["GET", "POST"])
+@app.route("/chat", methods=["POST"])
 def chatbot():
     user_input = request.json.get("message")
     if not user_input:
         return jsonify({"error": "Keine Eingabe erhalten"}), 400
 
-    import os
+    # API-Schlüssel abrufen
+    def get_openai_api_key():
+        env_key = os.getenv("OPENAI_API_KEY")
+        if env_key:
+            return env_key  # Falls in den Umgebungsvariablen vorhanden
 
-def get_openai_api_key():
-    """Holt den API-Key zuerst aus ENV, dann aus der Datenbank"""
-    env_key = os.getenv("OPENAI_API_KEY")
-    if env_key:
-        return env_key  # Falls der Key als Umgebungsvariable existiert
+        stored_key = APIKey.query.first()
+        if stored_key:
+            return stored_key.key  # Falls in der Datenbank gespeichert
 
-    stored_key = APIKey.query.first()
-    if stored_key:
-        return stored_key.key  # Falls der Key in der Datenbank ist
+        return None  # Kein API-Key gefunden
 
-    return None  # Kein API-Key gefunden
+    openai.api_key = get_openai_api_key()
+    if not openai.api_key:
+        return jsonify({"error": "Kein API-Key gespeichert"}), 500
 
-@app.route("/api/get-key", methods=["GET"])
-def get_api_key():
-    key = get_openai_api_key()
-    if key:
-        return jsonify({"api_key": key})
-    return jsonify({"error": "Kein API-Key gespeichert"}), 500
+    # Basis-Prompt abrufen
     stored_prompt = BotPrompt.query.first()
     base_prompt = stored_prompt.prompt if stored_prompt else "Ich bin ein hilfreicher Assistent."
+
+    # Begrüßungstext abrufen
     stored_greeting = GreetingMessage.query.first()
     greeting_message = stored_greeting.text if stored_greeting else "Hallo! Wie kann ich helfen?"
 
-    knowledge_text = load_current_knowledge()
+    # FAISS-Index laden, falls noch nicht geschehen
     global faiss_index, faiss_chunk_list
-    if faiss_index is None and knowledge_text.strip():
-        build_faiss_index_from_knowledge(knowledge_text)
+    if faiss_index is None:
+        knowledge_text = load_current_knowledge()
+        if knowledge_text.strip():
+            build_faiss_index_from_knowledge(knowledge_text)
 
+    # FAISS-Retrieval
+    relevant_context = ""
     if faiss_index is not None:
         query_embedding = get_embedding(user_input)
         if query_embedding is None:
             return jsonify({"error": "Fehler beim Abrufen des Embeddings."}), 500
+        
         query_embedding = np.array(query_embedding).astype("float32").reshape(1, -1)
         k = 3
         distances, indices = faiss_index.search(query_embedding, k)
-        relevant_chunks = []
-        for idx in indices[0]:
-            if idx < len(faiss_chunk_list):
-                relevant_chunks.append(faiss_chunk_list[idx])
+        relevant_chunks = [faiss_chunk_list[idx] for idx in indices[0] if idx < len(faiss_chunk_list)]
         relevant_context = "\n\n".join(relevant_chunks)
-    else:
-        relevant_context = ""
 
+    # OpenAI API-Aufruf mit RAG (Retrieval-Augmented Generation)
     messages = [
         {"role": "system", "content": base_prompt},
         {"role": "system", "content": f"Relevante Informationen:\n{relevant_context}"},
@@ -447,19 +447,7 @@ def get_api_key():
             model="gpt-4",
             messages=messages
         )
-        return jsonify({"response": response.choices[0].message.content})
+        return jsonify({"response": response.choices[0].message.content})  # ✅ WICHTIG: Antwort zurückgeben!
+    
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# --------------------------
-# Zusätzliche Routen: Home und Chat UI
-# --------------------------
-@app.route("/chat-ui")
-def chat_ui():
-    return render_template("chatbot.html")
-
-# --------------------------
-# Serverstart
-# --------------------------
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=6000, debug=True)
+        return jsonify({"error": str(e)}), 500  # ✅ Fehlerbehandlung mit Rückgabe!
