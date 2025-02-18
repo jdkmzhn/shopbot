@@ -390,12 +390,26 @@ def chatbot():
     if not user_input:
         return jsonify({"error": "Keine Eingabe erhalten"}), 400
 
+    import os
+
+def get_openai_api_key():
+    """Holt den API-Key zuerst aus ENV, dann aus der Datenbank"""
+    env_key = os.getenv("OPENAI_API_KEY")
+    if env_key:
+        return env_key  # Falls der Key als Umgebungsvariable existiert
+
     stored_key = APIKey.query.first()
-    if not stored_key:
-        return jsonify({"error": "Kein API-Key gespeichert"}), 500
+    if stored_key:
+        return stored_key.key  # Falls der Key in der Datenbank ist
 
-    openai.api_key = stored_key.key
+    return None  # Kein API-Key gefunden
 
+@app.route("/api/get-key", methods=["GET"])
+def get_api_key():
+    key = get_openai_api_key()
+    if key:
+        return jsonify({"api_key": key})
+    return jsonify({"error": "Kein API-Key gespeichert"}), 500
     stored_prompt = BotPrompt.query.first()
     base_prompt = stored_prompt.prompt if stored_prompt else "Ich bin ein hilfreicher Assistent."
     stored_greeting = GreetingMessage.query.first()
